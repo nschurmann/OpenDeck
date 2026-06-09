@@ -250,3 +250,31 @@ pub async fn initialise_devices() {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn plus_encoder_lcd_regions_are_horizontal() {
+		assert_eq!(encoder_lcd_segment_rect(Kind::Plus, 0), Some((0, 0, 200, 100)));
+		assert_eq!(encoder_lcd_segment_rect(Kind::Plus, 3), Some((600, 0, 200, 100)));
+		assert_eq!(encoder_lcd_icon_rect(Kind::Plus, 0), Some((64, 14, 72, 72)));
+		assert_eq!(encoder_lcd_icon_rect(Kind::Plus, 3), Some((664, 14, 72, 72)));
+	}
+
+	#[test]
+	fn plus_xl_encoder_lcd_regions_are_vertical() {
+		assert_eq!(encoder_lcd_segment_rect(Kind::PlusXl, 0), Some((0, 0, 100, 200)));
+		assert_eq!(encoder_lcd_segment_rect(Kind::PlusXl, 5), Some((0, 1000, 100, 200)));
+		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 0), Some((14, 64, 72, 72)));
+		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 5), Some((14, 1064, 72, 72)));
+	}
+
+	#[test]
+	fn encoder_lcd_regions_reject_invalid_positions_and_non_lcd_devices() {
+		assert_eq!(encoder_lcd_segment_rect(Kind::Plus, 4), None);
+		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 6), None);
+		assert_eq!(encoder_lcd_segment_rect(Kind::Mk2, 0), None);
+	}
+}
