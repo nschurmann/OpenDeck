@@ -16,6 +16,32 @@ use tokio::sync::RwLock;
 static ELGATO_DEVICES: LazyLock<RwLock<HashMap<String, AsyncStreamDeck>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 static HIDAPI: LazyLock<RwLock<Option<Arc<hidapi::HidApi>>>> = LazyLock::new(|| RwLock::new(None));
 
+fn encoder_lcd_segment_rect(kind: Kind, position: u8) -> Option<(u16, u16, u32, u32)> {
+	let (lcd_width, lcd_height) = kind.lcd_strip_size()?;
+	let encoder_count = kind.encoder_count() as usize;
+	let position = position as usize;
+	if position >= encoder_count {
+		return None;
+	}
+
+	if lcd_width >= lcd_height {
+		let segment_width = lcd_width / encoder_count;
+		Some(((position * segment_width) as u16, 0, segment_width as u32, lcd_height as u32))
+	} else {
+		let segment_height = lcd_height / encoder_count;
+		Some((0, (position * segment_height) as u16, lcd_width as u32, segment_height as u32))
+	}
+}
+
+fn encoder_lcd_icon_rect(kind: Kind, position: u8) -> Option<(u16, u16, u32, u32)> {
+	let (segment_x, segment_y, segment_width, segment_height) = encoder_lcd_segment_rect(kind, position)?;
+	let icon_size = 72u32;
+	let icon_x = segment_x + ((segment_width.saturating_sub(icon_size) / 2) as u16);
+	let icon_y = segment_y + ((segment_height.saturating_sub(icon_size) / 2) as u16);
+
+	Some((icon_x, icon_y, icon_size, icon_size))
+}
+
 /// Extract the average colour from an image.
 fn extract_average_colour(img: &image::DynamicImage) -> (u8, u8, u8) {
 	let (r_sum, g_sum, b_sum) = img
@@ -38,11 +64,14 @@ pub async fn update_image(context: &crate::shared::Context, image: Option<&str>)
 			let data = image.split_once(',').unwrap().1;
 			let bytes = base64::engine::general_purpose::STANDARD.decode(data)?;
 			if context.controller == "Encoder" {
+				let Some((x, y, width, height)) = encoder_lcd_icon_rect(kind, context.position) else {
+					return Ok(());
+				};
 				device
 					.write_lcd(
-						(context.position as u16 * 200) + 64,
-						14,
-						&ImageRect::from_image_async(image::load_from_memory(&bytes)?.resize(72, 72, image::imageops::FilterType::Nearest))?,
+						x,
+						y,
+						&ImageRect::from_image_async(image::load_from_memory(&bytes)?.resize(width, height, image::imageops::FilterType::Nearest))?,
 					)
 					.await?;
 			} else if is_touch_point {
@@ -52,9 +81,10 @@ pub async fn update_image(context: &crate::shared::Context, image: Option<&str>)
 				device.set_button_image(context.position, image::load_from_memory(&bytes)?).await?;
 			}
 		} else if context.controller == "Encoder" {
-			device
-				.write_lcd(context.position as u16 * 200, 0, &ImageRect::from_image_async(image::DynamicImage::new_rgb8(200, 100))?)
-				.await?;
+			let Some((x, y, width, height)) = encoder_lcd_segment_rect(kind, context.position) else {
+				return Ok(());
+			};
+			device.write_lcd(x, y, &ImageRect::from_image_async(image::DynamicImage::new_rgb8(width, height))?).await?;
 		} else if is_touch_point {
 			device.set_touchpoint_color(context.position - key_count, 0, 0, 0).await?;
 		} else {
@@ -75,9 +105,12 @@ async fn clear_all_touchpoints(device: &AsyncStreamDeck) {
 pub async fn clear_screen(id: &str) -> Result<(), anyhow::Error> {
 	if let Some(device) = ELGATO_DEVICES.read().await.get(id) {
 		device.clear_all_button_images().await?;
-		if device.kind() == Kind::Plus {
+		if let Some(lcd_format) = device.kind().lcd_image_format() {
 			device
-				.write_lcd_fill(&convert_image_with_format_async(device.kind().lcd_image_format().unwrap(), image::DynamicImage::new_rgb8(800, 100))?)
+				.write_lcd_fill(&convert_image_with_format_async(
+					lcd_format,
+					image::DynamicImage::new_rgb8(lcd_format.size.0 as u32, lcd_format.size.1 as u32),
+				)?)
 				.await?;
 		}
 		clear_all_touchpoints(device).await;
