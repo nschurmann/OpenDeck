@@ -176,7 +176,7 @@
 	<span id="grid-description" class="sr-only">Use arrow keys to navigate between keys. Moving to a key will display its property inspector.</span>
 	<div
 		class="flex flex-col justify-center grow px-16 py-6 overflow-auto"
-		class:items-center={device.columns <= 8}
+		class:items-center={device.columns <= 9}
 		class:hidden={$inspectedParentAction || selectedDevice != device.id}
 		class:device-fade-x={overflowsX && !overflowsY}
 		class:device-fade-y={overflowsY && !overflowsX}
