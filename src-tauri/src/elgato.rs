@@ -111,7 +111,7 @@ async fn init(device: AsyncStreamDeck, device_id: String) {
 		Kind::Mini | Kind::MiniMk2 | Kind::MiniDiscord | Kind::MiniMk2Module => 1,
 		Kind::Xl | Kind::XlV2 | Kind::XlV2Module => 2,
 		Kind::Pedal => 5,
-		Kind::Plus => 7,
+		Kind::Plus | Kind::PlusXl => 7,
 		Kind::Neo => 9,
 	};
 	let _ = device.clear_all_button_images().await;
