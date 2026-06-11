@@ -24,13 +24,8 @@ fn encoder_lcd_segment_rect(kind: Kind, position: u8) -> Option<(u16, u16, u32, 
 		return None;
 	}
 
-	if lcd_width >= lcd_height {
-		let segment_width = lcd_width / encoder_count;
-		Some(((position * segment_width) as u16, 0, segment_width as u32, lcd_height as u32))
-	} else {
-		let segment_height = lcd_height / encoder_count;
-		Some((0, (position * segment_height) as u16, lcd_width as u32, segment_height as u32))
-	}
+	let segment_width = lcd_width / encoder_count;
+	Some(((position * segment_width) as u16, 0, segment_width as u32, lcd_height as u32))
 }
 
 fn encoder_lcd_icon_rect(kind: Kind, position: u8) -> Option<(u16, u16, u32, u32)> {
@@ -264,11 +259,11 @@ mod tests {
 	}
 
 	#[test]
-	fn plus_xl_encoder_lcd_regions_are_vertical() {
-		assert_eq!(encoder_lcd_segment_rect(Kind::PlusXl, 0), Some((0, 0, 100, 200)));
-		assert_eq!(encoder_lcd_segment_rect(Kind::PlusXl, 5), Some((0, 1000, 100, 200)));
-		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 0), Some((14, 64, 72, 72)));
-		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 5), Some((14, 1064, 72, 72)));
+	fn plus_xl_encoder_lcd_regions_are_horizontal() {
+		assert_eq!(encoder_lcd_segment_rect(Kind::PlusXl, 0), Some((0, 0, 16, 1200)));
+		assert_eq!(encoder_lcd_segment_rect(Kind::PlusXl, 5), Some((80, 0, 16, 1200)));
+		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 0), Some((0, 564, 72, 72)));
+		assert_eq!(encoder_lcd_icon_rect(Kind::PlusXl, 5), Some((80, 564, 72, 72)));
 	}
 
 	#[test]

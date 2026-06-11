@@ -87,7 +87,7 @@
 	];
 	$: encoderRowIndex = device.rows;
 	$: touchpointRowIndex = device.rows + (device.encoders > 0 ? 1 : 0);
-	$: deviceRowWidth = device.columns * 132;
+	$: keypadRowWidth = device.columns * 132;
 
 	function flatIndexFromRowCol(row: number, col: number): number {
 		let index = 0;
@@ -210,7 +210,7 @@
 			{/each}
 		</div>
 
-		<div class="flex flex-row justify-between" role="row" style={`width: ${deviceRowWidth}px;`}>
+		<div class="flex flex-row justify-between" role="row" style={`width: ${keypadRowWidth}px;`}>
 			{#each { length: device.encoders } as _, i}
 				<Key
 					context={{ device: device.id, profile: profile.id, controller: "Encoder", position: i }}
